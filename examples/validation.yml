@@ -1,0 +1,19 @@
+project:
+  name: example-project
+  source_commit: 0000000000000000000000000000000000000000
+
+dependencies: []
+
+checks:
+  - provenance
+  - dependency_commit
+  - receipt_integrity
+  - rollback_presence
+  - falsifiers
+
+policy:
+  updates: observe_only
+  claim_allowed: false
+  reuse_receipts: true
+  artifact_retention_days: 90
+  recompute: impact_cone_only

@@ -1,0 +1,127 @@
+{
+  "events": [
+    {
+      "channel": "producer",
+      "id": "producer-0",
+      "observed_ms": 1700000000025,
+      "occurred_ms": 1700000000000,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 0
+    },
+    {
+      "channel": "buffer",
+      "id": "buffer-0",
+      "observed_ms": 1700000000125,
+      "occurred_ms": 1700000000100,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 0
+    },
+    {
+      "channel": "consumer",
+      "id": "consumer-0",
+      "observed_ms": 1700000000225,
+      "occurred_ms": 1700000000200,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 0
+    },
+    {
+      "channel": "producer",
+      "id": "producer-1",
+      "observed_ms": 1700000010025,
+      "occurred_ms": 1700000010000,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 1
+    },
+    {
+      "channel": "buffer",
+      "id": "buffer-1",
+      "observed_ms": 1700000010125,
+      "occurred_ms": 1700000010100,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 1
+    },
+    {
+      "channel": "consumer",
+      "id": "consumer-1",
+      "observed_ms": 1700000010225,
+      "occurred_ms": 1700000010200,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 1
+    },
+    {
+      "channel": "producer",
+      "id": "producer-2",
+      "observed_ms": 1700000020025,
+      "occurred_ms": 1700000020000,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 2
+    },
+    {
+      "channel": "buffer",
+      "id": "buffer-2",
+      "observed_ms": 1700000020125,
+      "occurred_ms": 1700000020100,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 2
+    },
+    {
+      "channel": "consumer",
+      "id": "consumer-2",
+      "observed_ms": 1700000020225,
+      "occurred_ms": 1700000020200,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 2
+    },
+    {
+      "channel": "producer",
+      "id": "producer-3",
+      "observed_ms": 1700000030025,
+      "occurred_ms": 1700000030000,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 3
+    },
+    {
+      "channel": "buffer",
+      "id": "buffer-3",
+      "observed_ms": 1700000030125,
+      "occurred_ms": 1700000030100,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 3
+    },
+    {
+      "channel": "consumer",
+      "id": "consumer-3",
+      "observed_ms": 1700000030225,
+      "occurred_ms": 1700000030200,
+      "quality": "good",
+      "receipt_ref": "fixture:unverified",
+      "source_ref": "fixture:nonphysical",
+      "value": 3
+    }
+  ],
+  "min_support": 3,
+  "version": 1,
+  "window_ms": 500
+}

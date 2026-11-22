@@ -69,6 +69,22 @@ jobs:
         run: |
           python3 -m compileall -q bin rafvalchecks
           python3 -m unittest discover -s tests -v
+      - name: Falsify temporal unknowns and false-positive paths
+        shell: sh
+        run: |
+          python3 bin/raf_mvp.py temporal --workspace . --events examples/temporal-observations.v1.json > "$RUNNER_TEMP/temporal.json"
+          python3 - <<'PYCODE'
+          import json, os, pathlib
+          r=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'temporal.json').read_text())
+          assert r['status']=='OBSERVATION_ONLY' and r['coverage']['eligible']==12
+          assert r['claim_allowed'] is False and r['causal_claim_allowed'] is False
+          assert r['runtime_skipping_authorized'] is False
+          assert r['external_source_trust_verified'] is False
+          assert r['cascade_candidates']
+          print('temporal_status='+r['status'])
+          print('hypotheses='+str(len(r['hypotheses'])))
+          print('typed_voids='+str(len(r['typed_voids'])))
+          PYCODE
       - name: Generate manifest for the exact checked-out commit
         shell: sh
         run: |

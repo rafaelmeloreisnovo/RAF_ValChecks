@@ -1,0 +1,100 @@
+{
+  "extensions": [
+    {
+      "mode": "fill",
+      "module": {
+        "config": {
+          "path": "examples/temporal-observations.v1.json",
+          "sha256": "fbc88a450b937fdb56593671fec2ae8369cbce56ed119c7e24ab55afe967f8df"
+        },
+        "id": "temporal",
+        "kind": "temporal_audit",
+        "required": true,
+        "scope": [
+          "evidence",
+          "buffer"
+        ]
+      },
+      "reason": "Bounded temporal observations analysis; candidate hypotheses only",
+      "slot": "knowledge.__void"
+    }
+  ],
+  "root": {
+    "children": [
+      {
+        "id": "manifest",
+        "kind": "manifest",
+        "required": true,
+        "scope": [
+          "manifest"
+        ]
+      },
+      {
+        "depends_on": [
+          "manifest"
+        ],
+        "id": "source",
+        "kind": "source",
+        "required": true,
+        "scope": [
+          "git_ref"
+        ]
+      },
+      {
+        "config": {
+          "ref": "git:revert-reviewed-commit"
+        },
+        "id": "rollback",
+        "kind": "rollback_reference",
+        "required": true,
+        "scope": [
+          "rollback"
+        ]
+      },
+      {
+        "children": [
+          {
+            "config": {
+              "assumption": "Hypothetical lengths only; not a physical star measurement",
+              "frame": "illustrative_scaled_model",
+              "left": {
+                "unit": "mm",
+                "value": "6"
+              },
+              "right": {
+                "unit": "m",
+                "value": "13"
+              }
+            },
+            "id": "relative",
+            "kind": "pair_relation",
+            "required": true,
+            "scope": [
+              "model"
+            ]
+          },
+          {
+            "accepts": [
+              "receipt",
+              "file_sha256",
+              "pair_relation",
+              "group"
+            ],
+            "fallback": "TOKEN_VAZIO",
+            "id": "evidence-slot",
+            "kind": "slot",
+            "reason": "External evidence not supplied; explicit extension point",
+            "required": false
+          }
+        ],
+        "id": "knowledge",
+        "kind": "group",
+        "required": true
+      }
+    ],
+    "id": "root",
+    "kind": "group",
+    "required": true
+  },
+  "version": 1
+}

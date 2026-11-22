@@ -134,7 +134,7 @@ def execute(spec, manifest_path, *, workspace=".", prior=None, prior_hash=None,
         else:
             old = previous_index.get(nid)
             scope = node.get("scope", [])
-            cache_eligible = (previous and old and node["kind"] not in ("manifest", "source", "receipt", "file_sha256")
+            cache_eligible = (previous and old and node["kind"] not in ("manifest", "source", "receipt", "file_sha256", "temporal_audit")
                               and old.get("fingerprint") == fingerprint
                               and old.get("result") == "PASS_SCOPED"
                               and old.get("claim_allowed") is False and isinstance(old.get("details"), dict)

@@ -65,3 +65,14 @@ adversarial evidence: [Git coverage contract](docs/GIT-COVERAGE-V1.md).
 - No `PASS_GLOBAL`, merge authorization, actual rollback, device testing, scientific measurement, producer authentication, GitHub retention enforcement, or global impact-cone scheduler is claimed.
 
 See [MVP contract and explicit boundaries](docs/MVP-CONTRACT.md), [recursive topology JSON Schema](schemas/topology-mvp.schema.json), [example topology](examples/topology.mvp.json), and [V1 schemas](schemas/validation-manifest.schema.json). The V1 interface is retained for compatibility. The repository owner retains decisions about an explicit software license (none inferred).
+
+### Temporal unknowns and falsifier candidates (optional)
+
+`python3 bin/raf_mvp.py temporal --workspace . --events examples/temporal-observations.v1.json`
+performs a bounded, read-only analysis of repeated event orderings. Bad data,
+missing receipt refs, duplicate identities and temporal inversions generate
+**typed negative coverage**. The plugin `temporal_audit` can be inserted into a
+`.__void` slot with a pinned SHA-256. Results are observations or candidate
+associations only: there is no proof of causality, signature trust, runtime
+skipping, or external producer integration.
+See [Temporal Evidence V1](docs/TEMPORAL-EVIDENCE-V1.md).

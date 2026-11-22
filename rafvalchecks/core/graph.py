@@ -6,7 +6,7 @@ slot without an implementation is BLOCKED. No patch can replace a required gate.
 import copy
 from .contract import demand, digest, keys, label, Violation
 
-KINDS = frozenset({"group", "slot", "manifest", "source", "receipt", "file_sha256", "pair_relation", "rollback_reference"})
+KINDS = frozenset({"group", "slot", "manifest", "source", "receipt", "file_sha256", "pair_relation", "rollback_reference", "temporal_audit"})
 
 
 def build(spec):

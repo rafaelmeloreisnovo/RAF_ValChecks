@@ -26,6 +26,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+          fetch-depth: 2 # exact commit + parent; intentionally per-commit, not whole PR ancestry
       - name: Assert exact source HEAD (not PR merge ref)
         shell: sh
         env:
@@ -33,6 +34,36 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$RAF_EXPECTED_HEAD"
           printf 'head_verified=%s\n' "$RAF_EXPECTED_HEAD"
+      - name: Audit verified local Git delta and negative coverage
+        shell: sh
+        run: |
+          # Expected conservative result: this change modifies control-plane
+          # files. A typed uncertainty is correct; it must never yield skip.
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          base = subprocess.check_output(['git', 'rev-parse', 'HEAD^'], text=True).strip()
+          head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          target = pathlib.Path(os.environ['RUNNER_TEMP']) / 'git-impact.json'
+          args = [sys.executable, 'bin/raf_mvp.py', 'git-impact',
+                  '--topology', 'examples/topology.mvp.json',
+                  '--workspace', '.', '--routes', 'examples/change-routes.v1.json',
+                  '--base', base, '--head', head]
+          result = subprocess.run(args, capture_output=True, text=True, check=False)
+          assert result.returncode in (0, 1), result.stderr
+          data = json.loads(result.stdout)
+          assert data['head'] == head and data['claim_allowed'] is False, data
+          assert data['impact_advisory']['change_source_verified'] is True, data
+          assert data['runtime_skipping_authorized'] is False, data
+          assert data['independent_route_authority_verified'] is False, data
+          if data['status'] == 'TOKEN_VAZIO':
+              assert result.returncode == 1 and not data['impact_advisory']['unaffected_candidates']
+          else:
+              assert result.returncode == 0 and data['status'] == 'PLAN_ONLY'
+          target.write_text(result.stdout)
+          print('git_impact_status=' + data['status'])
+          print('changed_paths=' + str(len(data['changed_paths'])))
+          print('anomaly_tokens=' + ','.join(data['anomaly_tokens']))
+          PY
       - name: Compile and run negative contract cases
         shell: sh
         run: |

@@ -4,6 +4,8 @@ on:
     paths:
       - 'action.yml'
       - 'bin/**'
+      - 'rafvalchecks/**'
+      - 'docs/**'
       - 'examples/**'
       - 'schemas/**'
       - 'tests/**'
@@ -34,7 +36,7 @@ jobs:
       - name: Compile and run negative contract cases
         shell: sh
         run: |
-          python3 -m py_compile bin/raf_valcheck.py
+          python3 -m compileall -q bin rafvalchecks
           python3 -m unittest discover -s tests -v
       - name: Generate manifest for the exact checked-out commit
         shell: sh
@@ -72,3 +74,23 @@ jobs:
           fi
           grep -q '^result=BLOCKED$' .raf/rejected.log
           grep -q '^token=SOURCE_COMMIT_INVALID$' .raf/rejected.log
+      - name: Exercise recursive MVP against exact checkout SHA
+        shell: sh
+        run: |
+          python3 bin/raf_mvp.py plan --topology examples/topology.mvp.json > .raf/plan.json
+          python3 bin/raf_mvp.py run --topology examples/topology.mvp.json --manifest .raf/validation.json --output .raf/mvp-receipt.json > .raf/mvp-result.json
+          python3 - <<'PY'
+          import json, pathlib
+          a = json.loads(pathlib.Path('.raf/mvp-receipt.json').read_text())
+          assert a['result'] == 'PASS_SCOPED', a
+          assert a['source_identity_verified'] is True, a
+          assert a['claim_allowed'] is False
+          assert a['counts']['void'] >= 1
+          assert all(v['kind']=='TOKEN_VAZIO' and v['value'] is None for v in a['typed_voids'])
+          PY
+      - name: Exercise MVP composite-action entrypoint
+        uses: ./
+        with:
+          mode: mvp
+          manifest: .raf/validation.json
+          topology: examples/topology.mvp.json

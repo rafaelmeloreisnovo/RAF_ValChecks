@@ -1,16 +1,36 @@
 name: RAF ValChecks
-description: Fail-closed pinned-manifest and receipt contract preflight (not a test runner)
+description: V1 pinned preflight or opt-in recursive MVP validation engine; claims never promoted
 inputs:
+  mode:
+    description: contract (V1 compatible) or mvp (recursive JSON topology)
+    required: false
+    default: contract
   manifest:
-    description: Path to a JSON or supported strict-YAML validation manifest
+    description: Source manifest (strict YAML subset or JSON)
     required: true
     default: .raf/validation.yml
   receipt:
-    description: Optional previously validated JSON receipt
+    description: V1 previous receipt assertion file (contract mode only)
     required: false
     default: ""
   trusted_receipt_sha256:
-    description: Trusted 64-character SHA-256 digest of receipt bytes (required to reuse)
+    description: Trusted raw V1 receipt SHA256 (contract mode only)
+    required: false
+    default: ""
+  topology:
+    description: Recursive MVP topology JSON (mvp mode only)
+    required: false
+    default: .raf/topology.json
+  mvp_prior:
+    description: Previous MVP receipt file, trusted externally
+    required: false
+    default: ""
+  mvp_prior_sha256:
+    description: Independent raw SHA256 of previous MVP receipt
+    required: false
+    default: ""
+  mvp_output:
+    description: Optional create-only JSON receipt path; never overwrites
     required: false
     default: ""
 runs:
@@ -18,7 +38,12 @@ runs:
   steps:
     - shell: sh
       env:
+        RAF_MODE: ${{ inputs.mode }}
         RAF_MANIFEST: ${{ inputs.manifest }}
         RAF_RECEIPT: ${{ inputs.receipt }}
         RAF_TRUSTED_RECEIPT_SHA256: ${{ inputs.trusted_receipt_sha256 }}
+        RAF_TOPOLOGY: ${{ inputs.topology }}
+        RAF_MVP_PRIOR: ${{ inputs.mvp_prior }}
+        RAF_MVP_PRIOR_SHA256: ${{ inputs.mvp_prior_sha256 }}
+        RAF_MVP_OUTPUT: ${{ inputs.mvp_output }}
       run: sh "${{ github.action_path }}/bin/raf-valcheck.sh"

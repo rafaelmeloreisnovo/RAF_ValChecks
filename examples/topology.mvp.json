@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "root": {
+    "id": "root", "kind": "group", "required": true,
+    "children": [
+      {"id": "manifest", "kind": "manifest", "required": true, "scope": ["manifest"]},
+      {"id": "source", "kind": "source", "required": true, "depends_on": ["manifest"], "scope": ["git_ref"]},
+      {"id": "rollback", "kind": "rollback_reference", "required": true,
+       "config": {"ref": "git:revert-reviewed-commit"}, "scope": ["rollback"]},
+      {"id": "knowledge", "kind": "group", "required": true, "children": [
+        {"id": "relative", "kind": "pair_relation", "required": true,
+         "config": {"frame": "illustrative_scaled_model", "assumption": "Hypothetical lengths only; not a physical star measurement",
+                    "left": {"value": "6", "unit": "mm"}, "right": {"value": "13", "unit": "m"}},
+         "scope": ["model"]},
+        {"id": "evidence-slot", "kind": "slot", "required": false, "accepts": ["receipt", "file_sha256", "pair_relation", "group"],
+         "fallback": "TOKEN_VAZIO", "reason": "External evidence not supplied; explicit extension point"}
+      ]}
+    ]
+  },
+  "extensions": []
+}

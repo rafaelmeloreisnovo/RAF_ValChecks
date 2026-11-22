@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "routes": [
+    {"prefix": "examples/", "scopes": ["model"]},
+    {"prefix": "docs/", "scopes": ["manifest"]},
+    {"prefix": "tests/", "scopes": ["manifest"]},
+    {"prefix": "rafvalchecks/", "scopes": ["manifest", "git_ref", "rollback", "model"]},
+    {"prefix": "schemas/", "scopes": ["manifest", "git_ref"]},
+    {"prefix": ".github/workflows/", "scopes": ["git_ref"]},
+    {"prefix": "bin/", "scopes": ["git_ref", "manifest"]},
+    {"path": "action.yml", "scopes": ["git_ref", "manifest"]},
+    {"path": "README.md", "scopes": ["manifest"]}
+  ]
+}

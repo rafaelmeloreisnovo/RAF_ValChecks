@@ -5,18 +5,25 @@ import json
 import sys
 from pathlib import Path
 
+# Git-audit mode requires a clean checkout; avoid creating bytecode as a side effect.
+sys.dont_write_bytecode = True
+
 # Run even when invoked via an absolute path in a consumer checkout.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from rafvalchecks.core.contract import Violation, canonical, read_json_document, typed_void
 from rafvalchecks.core.graph import build
 from rafvalchecks.core.impact import analyze
+from rafvalchecks.core.git_coverage import audit_git
 from rafvalchecks.core.engine import execute, write_once
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Fail-closed recursive validation MVP")
-    parser.add_argument("command", choices=["plan", "impact", "run"])
+    parser.add_argument("command", choices=["plan", "impact", "git-impact", "run"])
     parser.add_argument("--topology", required=True, help="JSON-only recursive topology")
+    parser.add_argument("--base", help="Exact ancestor commit SHA for read-only Git comparison")
+    parser.add_argument("--head", help="Exact checked-out HEAD SHA for read-only Git comparison")
+    parser.add_argument("--routes", help="Repository-local versioned exact/prefix path-to-scope rules")
     parser.add_argument("--manifest", default=".raf/validation.yml", help="V1 manifest, YAML subset or JSON")
     parser.add_argument("--workspace", default=".")
     parser.add_argument("--prior", help="Previous externally trusted local receipt")
@@ -29,7 +36,9 @@ def main(argv=None):
     try:
         spec, _ = read_json_document(args.topology)
         graph = build(spec)
-        if args.command in ("plan", "impact"):
+        if args.command == "git-impact":
+            data = audit_git(graph, workspace=args.workspace, base=args.base, head=args.head, routes_file=args.routes)
+        elif args.command in ("plan", "impact"):
             data = {"version": "raf-valchecks-mvp/1", "result": "PLAN_ONLY", "claim_allowed": False,
                     "graph_sha256": graph["graph_hash"], "root_id": graph["root"]["id"],
                     "order": graph["order"], "dependencies": graph["dependencies"],

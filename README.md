@@ -37,6 +37,26 @@ or unknown change scope. Unaffected nodes are candidates only. Receipt reuse is
 forbidden under such uncertainty. The user-supplied change set is *not* a verified
 Git diff. See [contract](docs/MVP-CONTRACT.md).
 
+### Verified Git change coverage (opt-in, read-only)
+
+`git-impact` now reads a clean, exact local Git `base..HEAD` interval and
+classifies changed paths using the explicit versioned
+[`change-routes.v1.json`](examples/change-routes.v1.json) policy.
+Unmapped paths, unknown topology scopes, empty diffs and changes to validator
+control-plane paths produce a **typed unknown** and an all-nodes impact plan.
+A path-to-scope rule is a hypothesis, never proof that other dependencies do not
+exist. All results keep `runtime_skipping_authorized=false`.
+
+```sh
+python3 bin/raf_mvp.py git-impact --topology examples/topology.mvp.json \
+  --routes examples/change-routes.v1.json --workspace . \
+  --base "$(git rev-parse HEAD^)" --head "$(git rev-parse HEAD)"
+```
+
+Run before generating untracked files in the checkout. No implicit network
+fetch, CI cancellation or receipt promotion occurs. Full boundaries and
+adversarial evidence: [Git coverage contract](docs/GIT-COVERAGE-V1.md).
+
 ### CI and custody
 
 - One read-only PR/dispatch workflow exercises legacy contract regression, graph plans, bad manifest rejection, recursive module execution, and the composite Action. A SHA-pinned checkout is used; no `pip` packages are installed.

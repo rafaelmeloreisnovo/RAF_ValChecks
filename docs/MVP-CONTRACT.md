@@ -80,3 +80,11 @@ Safety budgets: maximum 32 levels, 512 represented nodes including virtual slots
 and 128 declared extension patches. Overflow is a typed contract rejection, not
 a truncation or implicit success. For larger graphs, use independently verified
 shards connected through a future federation contract.
+
+## Source-verifiable Git impact extension (stacked follow-up)
+
+A new opt-in `git-impact` command verifies a precise, clean local Git commit
+interval before mapping changed paths to graph scopes. Unknown or uncovered
+paths generate typed uncertainty and affect all nodes conservatively; no runtime
+skipping is authorized. This is distinct from producer-authenticated evidence
+and from causal discovery. See [Git coverage V1](GIT-COVERAGE-V1.md).

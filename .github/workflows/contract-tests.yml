@@ -22,7 +22,15 @@ jobs:
       - name: Checkout without persistent credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, node24, pinned
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Assert exact source HEAD (not PR merge ref)
+        shell: sh
+        env:
+          RAF_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$RAF_EXPECTED_HEAD"
+          printf 'head_verified=%s\n' "$RAF_EXPECTED_HEAD"
       - name: Compile and run negative contract cases
         shell: sh
         run: |

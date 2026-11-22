@@ -76,3 +76,28 @@ missing receipt refs, duplicate identities and temporal inversions generate
 associations only: there is no proof of causality, signature trust, runtime
 skipping, or external producer integration.
 See [Temporal Evidence V1](docs/TEMPORAL-EVIDENCE-V1.md).
+
+### Dependency continuity / GC and friction guard (opt-in)
+
+`dependency-guard` complements (does not replace) `git-impact`. It reads a
+**clean exact Git HEAD and its immutable ancestor** and highlights changes to
+build descriptors, Gradle/npm/pip lockfiles and Actions workflow metadata.
+Without **pinned** transitive graph and comparable performance snapshots it
+reports typed `TOKEN_VAZIO` rather than silently allowing a dependency update.
+It cannot approve, block running legacy code, skip CI, establish P0 severity or
+prove performance from an untrusted metric assertion.
+
+```sh
+BASE=$(git rev-parse HEAD^)
+HEAD=$(git rev-parse HEAD)
+python3 bin/raf_mvp.py dependency-guard \
+  --topology examples/topology.mvp.json \
+  --routes examples/change-routes.v1.json \
+  --workspace . --base "$BASE" --head "$HEAD"
+```
+
+For versioned resolved graph and benchmark snapshots committed at **both** Git
+refs, add `--dep-graph PATH --perf-snapshot PATH`. Output includes
+`visual_alert`, `changed_dependency_paths`, `typed_gaps`, memory/GC comparison
+candidates and commit-dates as asserted Git metadata. It **never** permits
+promoting updates. See [Dependency continuity V1](docs/DEPENDENCY-CONTINUITY-V1.md).

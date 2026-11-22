@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout source without persistent credentials
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2, pinned
+      - name: Checkout without persistent credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, node24, pinned
         with:
           persist-credentials: false
       - name: Compile and run negative contract cases
@@ -28,3 +28,39 @@ jobs:
         run: |
           python3 -m py_compile bin/raf_valcheck.py
           python3 -m unittest discover -s tests -v
+      - name: Generate manifest for the exact checked-out commit
+        shell: sh
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          manifest = {
+              'project': {'name': 'RAF_ValChecks', 'repository': os.environ['GITHUB_REPOSITORY'], 'source_commit': sha},
+              'dependencies': [],
+              'checks': ['action_entrypoint'],
+              'policy': {'updates': 'observe_only', 'claim_allowed': False,
+                         'reuse_receipts': False, 'recompute': 'impact_cone_only',
+                         'impact_scope': ['contract_preflight']}
+          }
+          pathlib.Path('.raf').mkdir(exist_ok=True)
+          pathlib.Path('.raf/validation.json').write_text(json.dumps(manifest), encoding='utf-8')
+          PY
+      - name: Execute composite Action positive path
+        uses: ./
+        with:
+          manifest: .raf/validation.json
+      - name: Reject an invalid source commit via Action entrypoint
+        shell: sh
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          doc = json.loads(pathlib.Path('.raf/validation.json').read_text())
+          doc['project']['source_commit'] = '0' * 40
+          pathlib.Path('.raf/invalid.json').write_text(json.dumps(doc), encoding='utf-8')
+          PY
+          if RAF_MANIFEST=.raf/invalid.json sh bin/raf-valcheck.sh > .raf/rejected.log; then
+            printf '%s\n' 'invalid manifest was accepted' >&2
+            exit 1
+          fi
+          grep -q '^result=BLOCKED$' .raf/rejected.log
+          grep -q '^token=SOURCE_COMMIT_INVALID$' .raf/rejected.log

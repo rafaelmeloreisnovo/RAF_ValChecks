@@ -49,7 +49,7 @@ The schemas in `schemas/` define the structural contracts; the Python validator 
 ## Tests, CI budget and rollback
 
 - `tests/test_valchecks.py` covers positive parsing and negative cases for malformed manifests, duplicate keys, incorrect SHA, wrong repository, unsafe YAML, policy, receipt trust, expiry, mismatched scope and lineage. Tests are entirely offline.
-- `.github/workflows/contract-tests.yml` is read-only and runs only on changes to the validator contract (and manual dispatch). It uses a pinned checkout Action and cancels superseded runs for the same PR/ref to reduce wasted CI.
+- `.github/workflows/contract-tests.yml` is read-only, limited to contract changes (plus manual dispatch) and cancels superseded runs per PR/ref. It pins checkout v7.0.1 at its verified full SHA (Node 24) to avoid a deprecated runtime. Hosted CI runs the offline suite and additionally invokes the composite Action on a live-HEAD manifest, then verifies that the shell entrypoint rejects an invalid commit.
 - `main` remains unchanged while PR #1 is draft; rollback is to leave the PR unmerged or make a reviewed corrective commit on its branch. No branch deletion, force push, release, deployment, cross-repo workflow or permission change is authorized by this work.
 
 **Authority and licensing:** The repository owner retains licensing decisions; no license is inferred from a public GitHub URL. This repo does not copy the private RAFAELIA corpus.

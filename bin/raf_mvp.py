@@ -15,12 +15,13 @@ from rafvalchecks.core.graph import build
 from rafvalchecks.core.impact import analyze
 from rafvalchecks.core.git_coverage import audit_git
 from rafvalchecks.core.engine import execute, write_once
+from rafvalchecks.core.temporal import analyze_file
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Fail-closed recursive validation MVP")
-    parser.add_argument("command", choices=["plan", "impact", "git-impact", "run"])
-    parser.add_argument("--topology", required=True, help="JSON-only recursive topology")
+    parser.add_argument("command", choices=["plan", "impact", "git-impact", "run", "temporal"])
+    parser.add_argument("--topology", help="JSON-only recursive topology")
     parser.add_argument("--base", help="Exact ancestor commit SHA for read-only Git comparison")
     parser.add_argument("--head", help="Exact checked-out HEAD SHA for read-only Git comparison")
     parser.add_argument("--routes", help="Repository-local versioned exact/prefix path-to-scope rules")
@@ -32,10 +33,20 @@ def main(argv=None):
     parser.add_argument("--ttl-hours", type=int, default=24)
     parser.add_argument("--rollback-ref", help="Rollback locator, documented only; not executed")
     parser.add_argument("--output", help="Receipt JSON path, create-only; never overwrites")
+    parser.add_argument("--events", help="JSON event observations for read-only temporal audit")
+    parser.add_argument("--events-sha256", help="Optional pinned SHA-256 of event input; not producer authentication")
     args = parser.parse_args(argv)
     try:
-        spec, _ = read_json_document(args.topology)
-        graph = build(spec)
+        if args.command == "temporal":
+            if not args.events:
+                raise Violation("EVENT_INPUT_REQUIRED")
+            data = analyze_file(args.workspace, args.events, args.events_sha256)
+        else:
+            if not args.topology:
+                raise Violation("TOPOLOGY_INPUT_REQUIRED")
+            spec, _ = read_json_document(args.topology)
+            graph = build(spec)
+            data = None
         if args.command == "git-impact":
             data = audit_git(graph, workspace=args.workspace, base=args.base, head=args.head, routes_file=args.routes)
         elif args.command in ("plan", "impact"):
@@ -44,7 +55,7 @@ def main(argv=None):
                     "order": graph["order"], "dependencies": graph["dependencies"],
                     "slot_count": graph["slot_count"], "extensions": graph["extension_count"],
                     "executions": 0, "impact_advisory": analyze(graph, args.changed)}
-        else:
+        elif args.command == "run":
             data = execute(spec, args.manifest, workspace=args.workspace,
                            prior=args.prior, prior_hash=args.prior_sha256,
                            changed_scopes=args.changed, ttl_hours=args.ttl_hours,
@@ -53,7 +64,7 @@ def main(argv=None):
         if args.output:
             write_once(args.output, serialized)
         sys.stdout.buffer.write(serialized)
-        return 0 if data["result"] in ("PLAN_ONLY", "PASS_SCOPED") else 1
+        return 0 if data.get("result", data.get("status")) in ("PLAN_ONLY", "PASS_SCOPED", "OBSERVATION_ONLY") else 1
     except Violation as e:
         response = {"version": "raf-valchecks-mvp/1", "result": "BLOCKED",
                     "claim_allowed": False, "token": e.token,

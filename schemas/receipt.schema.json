@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RAF ValChecks receipt",
+  "type": "object",
+  "required": ["receipt_id", "source", "result", "evidence", "claim_allowed"],
+  "properties": {
+    "receipt_id": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": {"type": "string", "minLength": 3},
+        "commit": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"},
+        "manifest_hash": {"type": ["string", "null"]},
+        "dependency_commits": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "enum": ["PASS_SCOPED", "REUSED_VALID_RECEIPT", "BLOCKED", "FAILED", "TOKEN_VAZIO"]
+    },
+    "evidence": {
+      "enum": ["DOCUMENTED", "EXECUTED", "MEASURED_LOCAL", "REPRODUCED", "TOKEN_VAZIO"]
+    },
+    "falsifiers": {"type": "array", "items": {"type": "string"}},
+    "rollback_ref": {"type": ["string", "null"]},
+    "impact_scope": {"type": "array", "items": {"type": "string"}},
+    "claim_allowed": {"const": false}
+  },
+  "additionalProperties": false
+}

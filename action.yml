@@ -1,0 +1,19 @@
+name: RAF ValChecks
+description: Validate pinned provenance, typed evidence state, and receipt reuse
+inputs:
+  manifest:
+    description: Path to validation manifest
+    required: true
+    default: .raf/validation.yml
+  receipt:
+    description: Optional previous receipt for scoped reuse
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - shell: sh
+      env:
+        RAF_MANIFEST: ${{ inputs.manifest }}
+        RAF_RECEIPT: ${{ inputs.receipt }}
+      run: ${{ github.action_path }}/bin/raf-valcheck.sh

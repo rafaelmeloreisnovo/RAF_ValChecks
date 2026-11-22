@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RAF ValChecks validation manifest",
+  "type": "object",
+  "required": ["project", "dependencies", "checks", "policy"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["name", "source_commit"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"}
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "repository", "commit"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "repository": {"type": "string", "minLength": 3},
+          "commit": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"},
+          "approved": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "policy": {
+      "type": "object",
+      "required": ["updates", "claim_allowed", "reuse_receipts"],
+      "properties": {
+        "updates": {"const": "observe_only"},
+        "claim_allowed": {"const": false},
+        "reuse_receipts": {"type": "boolean"},
+        "artifact_retention_days": {"type": "integer", "minimum": 1},
+        "recompute": {"enum": ["impact_cone_only", "full"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

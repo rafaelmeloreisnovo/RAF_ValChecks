@@ -94,3 +94,21 @@ jobs:
           mode: mvp
           manifest: .raf/validation.json
           topology: examples/topology.mvp.json
+      - name: Audit impact cone without executing or skipping checks
+        shell: sh
+        run: |
+          python3 bin/raf_mvp.py impact --topology examples/topology.mvp.json --changed model > .raf/impact.json
+          python3 bin/raf_mvp.py impact --topology examples/topology.mvp.json --changed unknown_remote_scope > .raf/impact-unknown.json
+          python3 - <<'PY'
+          import json, pathlib
+          known=json.loads(pathlib.Path('.raf/impact.json').read_text())
+          unknown=json.loads(pathlib.Path('.raf/impact-unknown.json').read_text())
+          a=known['impact_advisory']
+          assert known['executions'] == 0 and known['claim_allowed'] is False
+          assert a['status'] == 'PLAN_ONLY' and a['runtime_skipping_authorized'] is False
+          assert {'relative', 'knowledge', 'root', 'manifest', 'source'} <= set(a['affected'])
+          assert 'rollback' in a['unaffected_candidates']
+          u=unknown['impact_advisory']
+          assert u['status'] == 'TOKEN_VAZIO' and u['unaffected_candidates'] == []
+          assert u['typed_void']['value'] is None
+          PY

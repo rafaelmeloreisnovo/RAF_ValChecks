@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from rafvalchecks.core.contract import Violation, canonical, digest
 from rafvalchecks.core.graph import build
+from rafvalchecks.core.impact import analyze
 from rafvalchecks.core.engine import execute, write_once
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -211,6 +212,81 @@ class MVPTests(unittest.TestCase):
         r = self.go(prior=p, prior_hash=h, rollback_ref="git:reviewed-revert-pr")
         self.assertEqual(r["predecessor_ref"], h)
         self.assertEqual(r["rollback_ref"], "git:reviewed-revert-pr")
+
+    def test_impact_cone_known_scope_propagates(self):
+        plan = analyze(build(topo()), ["model"])
+        self.assertEqual(plan["status"], "PLAN_ONLY")
+        self.assertIn("relative", plan["affected"])
+        self.assertIn("knowledge", plan["affected"])
+        self.assertIn("root", plan["affected"])
+        self.assertIn("manifest", plan["affected"])  # mandatory identity revalidation
+        self.assertIn("source", plan["affected"])
+        self.assertIn("rollback", plan["unaffected_candidates"])
+        self.assertFalse(plan["runtime_skipping_authorized"])
+        self.assertFalse(plan["change_source_verified"])
+
+    def test_impact_unknown_scope_fails_open_to_no_reuse_never(self):
+        plan = analyze(build(topo()), ["undocumented_new_scope"])
+        self.assertEqual(plan["status"], "TOKEN_VAZIO")
+        self.assertEqual(plan["unaffected_candidates"], [])
+        self.assertEqual(plan["unknown_scopes"], ["undocumented_new_scope"])
+        self.assertEqual(plan["typed_void"]["value"], None)
+        self.assertEqual(len(plan["affected"]), len(build(topo())["nodes"]))
+
+    def test_impact_missing_changes_is_uncertain(self):
+        plan = analyze(build(topo()), [])
+        self.assertEqual(plan["status"], "TOKEN_VAZIO")
+        self.assertEqual(plan["unaffected_candidates"], [])
+        self.assertEqual(plan["typed_void"]["reason"], "CHANGESET_UNSPECIFIED")
+
+    def test_impact_scope_propagates_through_filled_slot(self):
+        t = topo()
+        t["extensions"] = [{"slot":"evidence-slot", "mode":"fill", "reason":"specialize impact analysis", "module": {
+            "id":"ext-model", "kind":"pair_relation", "scope":["new_specialty"],
+            "config":{"frame":"model", "assumption":"synthetic", "left":{"value":"3", "unit":"mm"}, "right":{"value":"5", "unit":"mm"}}}}]
+        plan = analyze(build(t), ["new_specialty"])
+        for nid in ("ext-model", "evidence-slot", "knowledge", "root"):
+            self.assertIn(nid, plan["affected"])
+
+    def test_impact_unknown_or_missing_scope_disables_receipt_reuse(self):
+        previous = self.go()
+        p = self.ws / "old-impact.json"; p.write_bytes(canonical(previous))
+        d = hashlib.sha256(p.read_bytes()).hexdigest()
+        for changes in ([], ["not_declared"]):
+            again = self.go(prior=p, prior_hash=d, changed_scopes=changes)
+            self.assertEqual(again["counts"]["reused"], 0)
+            self.assertEqual(again["impact_advisory"]["status"], "TOKEN_VAZIO")
+            self.assertFalse(again["claim_allowed"])
+
+    def test_impact_cli_is_read_only_and_explicit(self):
+        p = subprocess.run([sys.executable, str(ROOT/"bin"/"raf_mvp.py"), "impact", "--topology",
+                            str(ROOT/"examples"/"topology.mvp.json"), "--changed", "model"],
+                           capture_output=True, text=True, timeout=5)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        data = json.loads(p.stdout)
+        self.assertEqual(data["result"], "PLAN_ONLY")
+        self.assertEqual(data["executions"], 0)
+        self.assertIn("relative", data["impact_advisory"]["affected"])
+        self.assertFalse(data["claim_allowed"])
+
+    def test_invalid_impact_scopes_block(self):
+        with self.assertRaisesRegex(Violation, "CHANGED_SCOPE_INVALID"):
+            analyze(build(topo()), [42])
+
+    def test_excessive_module_graph_rejected_not_truncated(self):
+        t = topo()
+        t["root"]["children"].extend({"id":f"bounded{i}", "kind":"rollback_reference", "config":{"ref":"git:readonly"}}
+                                     for i in range(300))
+        with self.assertRaisesRegex(Violation, "MAX_MODULES_EXCEEDED"):
+            build(t)
+
+    def test_excessive_extensions_rejected_without_execution(self):
+        t = topo()
+        t["extensions"] = [{"slot":"evidence-slot", "mode":"compose", "reason":"bounded extension example",
+                             "module":{"id":f"module{i}","kind":"rollback_reference", "config":{"ref":"git:x"}}}
+                            for i in range(129)]
+        with self.assertRaisesRegex(Violation, "EXTENSIONS_INVALID"):
+            build(t)
 
     def test_output_append_only_refuses_overwrite(self):
         out = self.ws / "receipt.json"

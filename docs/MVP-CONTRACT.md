@@ -60,3 +60,23 @@ Consumer Action example (pin the `uses:` repository to an independently reviewed
 `DOCUMENTED` → `IMPLEMENTED_UNTESTED` → `LOCAL_TESTED_SCOPED` → `EXACT_HEAD_CI_SCOPED` → `INTEGRATED_CONSUMER_EVIDENCE` → `DEVICE_EVIDENCE` are **distinct** states. The MVP neither infers latter states from former ones nor implements arbitrary project CI. An extension can add another specialist, but its validator must be reviewed and tested separately. For now module kinds are allowlisted and internal.
 
 No direct writes to Drive, Supabase, Notion, Slack, rulesets, branch protection, releases or consumer repositories occur. No external dependencies or secrets are required. Relative comparison is a model, not science validation.
+
+## Incremental impact-cone advisory (post-MVP)
+
+`python3 bin/raf_mvp.py impact --topology examples/topology.mvp.json --changed model`
+provides a **read-only plan**, not permission to skip checks. The planner traces
+propagating effects through dependencies, nested group aggregation and versioned
+slot extensions. `manifest` and `source` remain mandatory at every run.
+
+Declared changes are **not** a verified Git diff. If a scope is absent or unknown
+then `impact_advisory.status=TOKEN_VAZIO`, all nodes are affected conservatively
+and reuse is disabled. Known-scope unaffected candidates are *only candidates*;
+`runtime_skipping_authorized=false` and `change_source_verified=false` always.
+Reusing deterministic leaf assertions additionally requires a valid, externally
+trusted prior receipt and matching fingerprints. No business, security or CI
+check is silently skipped because the user provided `--changed`.
+
+Safety budgets: maximum 32 levels, 512 represented nodes including virtual slots,
+and 128 declared extension patches. Overflow is a typed contract rejection, not
+a truncation or implicit success. For larger graphs, use independently verified
+shards connected through a future federation contract.

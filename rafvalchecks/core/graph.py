@@ -21,6 +21,7 @@ def build(spec):
         demand(depth <= 32, "MAX_MODULE_DEPTH_EXCEEDED")
         keys(node, ["id", "kind"], ["id", "kind", "required", "depends_on", "scope", "config", "children", "accepts", "fallback", "reason", "rollback_ref"], "module")
         nid = label(node["id"])
+        demand(len(seen) < 512, "MAX_MODULES_EXCEEDED", nid)
         demand(nid not in seen, "MODULE_ID_DUPLICATE", nid)
         demand(node["kind"] in KINDS, "MODULE_KIND_UNKNOWN", nid)
         demand(type(node.get("required", True)) is bool, "REQUIRED_FLAG_INVALID", nid)
@@ -52,6 +53,7 @@ def build(spec):
         # Every non-slot module has a reserved typed vacancy. The port itself
         # never sprouts another port; this is finite even under recursion.
         if node["kind"] != "slot":
+            demand(len(seen) < 512, "MAX_MODULES_EXCEEDED", nid)
             slot_id = nid + ".__void"
             demand(slot_id not in seen, "RESERVED_SLOT_ID_COLLISION", slot_id)
             virtual = {"id": slot_id, "kind": "slot", "required": False,
@@ -64,7 +66,7 @@ def build(spec):
 
     scan(root)
     extensions = spec.get("extensions", [])
-    demand(isinstance(extensions, list), "EXTENSIONS_INVALID")
+    demand(isinstance(extensions, list) and len(extensions) <= 128, "EXTENSIONS_INVALID")
     used = set()
     composed = set()
     # Patches only target slots, and inserted subtrees retain identities and provenance.

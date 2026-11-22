@@ -1,0 +1,74 @@
+name: RAF ValChecks contract tests
+on:
+  pull_request:
+    paths:
+      - 'action.yml'
+      - 'bin/**'
+      - 'examples/**'
+      - 'schemas/**'
+      - 'tests/**'
+      - '.github/workflows/contract-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: valchecks-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout without persistent credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, node24, pinned
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Assert exact source HEAD (not PR merge ref)
+        shell: sh
+        env:
+          RAF_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$RAF_EXPECTED_HEAD"
+          printf 'head_verified=%s\n' "$RAF_EXPECTED_HEAD"
+      - name: Compile and run negative contract cases
+        shell: sh
+        run: |
+          python3 -m py_compile bin/raf_valcheck.py
+          python3 -m unittest discover -s tests -v
+      - name: Generate manifest for the exact checked-out commit
+        shell: sh
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          manifest = {
+              'project': {'name': 'RAF_ValChecks', 'repository': os.environ['GITHUB_REPOSITORY'], 'source_commit': sha},
+              'dependencies': [],
+              'checks': ['action_entrypoint'],
+              'policy': {'updates': 'observe_only', 'claim_allowed': False,
+                         'reuse_receipts': False, 'recompute': 'impact_cone_only',
+                         'impact_scope': ['contract_preflight']}
+          }
+          pathlib.Path('.raf').mkdir(exist_ok=True)
+          pathlib.Path('.raf/validation.json').write_text(json.dumps(manifest), encoding='utf-8')
+          PY
+      - name: Execute composite Action positive path
+        uses: ./
+        with:
+          manifest: .raf/validation.json
+      - name: Reject an invalid source commit via Action entrypoint
+        shell: sh
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          doc = json.loads(pathlib.Path('.raf/validation.json').read_text())
+          doc['project']['source_commit'] = '0' * 40
+          pathlib.Path('.raf/invalid.json').write_text(json.dumps(doc), encoding='utf-8')
+          PY
+          if RAF_MANIFEST=.raf/invalid.json sh bin/raf-valcheck.sh > .raf/rejected.log; then
+            printf '%s\n' 'invalid manifest was accepted' >&2
+            exit 1
+          fi
+          grep -q '^result=BLOCKED$' .raf/rejected.log
+          grep -q '^token=SOURCE_COMMIT_INVALID$' .raf/rejected.log

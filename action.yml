@@ -1,12 +1,16 @@
 name: RAF ValChecks
-description: Validate pinned provenance, typed evidence state, and receipt reuse
+description: Fail-closed pinned-manifest and receipt contract preflight (not a test runner)
 inputs:
   manifest:
-    description: Path to validation manifest
+    description: Path to a JSON or supported strict-YAML validation manifest
     required: true
     default: .raf/validation.yml
   receipt:
-    description: Optional previous receipt for scoped reuse
+    description: Optional previously validated JSON receipt
+    required: false
+    default: ""
+  trusted_receipt_sha256:
+    description: Trusted 64-character SHA-256 digest of receipt bytes (required to reuse)
     required: false
     default: ""
 runs:
@@ -16,4 +20,5 @@ runs:
       env:
         RAF_MANIFEST: ${{ inputs.manifest }}
         RAF_RECEIPT: ${{ inputs.receipt }}
-      run: ${{ github.action_path }}/bin/raf-valcheck.sh
+        RAF_TRUSTED_RECEIPT_SHA256: ${{ inputs.trusted_receipt_sha256 }}
+      run: sh "${{ github.action_path }}/bin/raf-valcheck.sh"

@@ -1,6 +1,8 @@
+# EXAMPLE ONLY. Replace source_commit with the actual checked-out commit.
 project:
   name: example-project
-  source_commit: 0000000000000000000000000000000000000000
+  repository: rafaelmeloreisnovo/RAF_ValChecks
+  source_commit: 7e420be73925c133d77f2e894ea1ae62b8a70d63
 
 dependencies: []
 
@@ -15,5 +17,7 @@ policy:
   updates: observe_only
   claim_allowed: false
   reuse_receipts: true
+  impact_scope:
+    - example-project
   artifact_retention_days: 90
   recompute: impact_cone_only

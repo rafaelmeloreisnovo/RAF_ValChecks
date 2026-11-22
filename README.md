@@ -21,11 +21,21 @@ Two public entrypoints coexist without breaking consumers:
 
 ```sh
 python3 bin/raf_mvp.py plan --topology examples/topology.mvp.json
+python3 bin/raf_mvp.py impact --topology examples/topology.mvp.json --changed model
 python3 bin/raf_mvp.py run --topology examples/topology.mvp.json --manifest .raf/validation.yml
 python3 -m unittest discover -s tests -v
 ```
 
 For a local contract-only demonstration with `examples/validation.yml`, `RAF_EXPECTED_COMMIT=7e420be73925c133d77f2e894ea1ae62b8a70d63` asserts a synthetic checked-out SHA, marked `ASSERTED_LOCAL_TEST`. Never use this substitution to claim real checkout identity in production; GitHub Actions always reads Git HEAD.
+
+### Impact-cone analyzer (advisory)
+
+A separate deterministic analyzer traces affected nodes through recursive dependencies.
+It **does not execute, skip, or authorize CI checks**. It requires caller-declared
+scopes, rechecks mandatory identity gates, and returns `TOKEN_VAZIO` for an absent
+or unknown change scope. Unaffected nodes are candidates only. Receipt reuse is
+forbidden under such uncertainty. The user-supplied change set is *not* a verified
+Git diff. See [contract](docs/MVP-CONTRACT.md).
 
 ### CI and custody
 

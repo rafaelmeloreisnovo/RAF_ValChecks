@@ -9,12 +9,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from rafvalchecks.core.contract import Violation, canonical, read_json_document, typed_void
 from rafvalchecks.core.graph import build
+from rafvalchecks.core.impact import analyze
 from rafvalchecks.core.engine import execute, write_once
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Fail-closed recursive validation MVP")
-    parser.add_argument("command", choices=["plan", "run"])
+    parser.add_argument("command", choices=["plan", "impact", "run"])
     parser.add_argument("--topology", required=True, help="JSON-only recursive topology")
     parser.add_argument("--manifest", default=".raf/validation.yml", help="V1 manifest, YAML subset or JSON")
     parser.add_argument("--workspace", default=".")
@@ -28,12 +29,12 @@ def main(argv=None):
     try:
         spec, _ = read_json_document(args.topology)
         graph = build(spec)
-        if args.command == "plan":
+        if args.command in ("plan", "impact"):
             data = {"version": "raf-valchecks-mvp/1", "result": "PLAN_ONLY", "claim_allowed": False,
                     "graph_sha256": graph["graph_hash"], "root_id": graph["root"]["id"],
                     "order": graph["order"], "dependencies": graph["dependencies"],
                     "slot_count": graph["slot_count"], "extensions": graph["extension_count"],
-                    "executions": 0}
+                    "executions": 0, "impact_advisory": analyze(graph, args.changed)}
         else:
             data = execute(spec, args.manifest, workspace=args.workspace,
                            prior=args.prior, prior_hash=args.prior_sha256,

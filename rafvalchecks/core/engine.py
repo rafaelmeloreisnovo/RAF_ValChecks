@@ -10,6 +10,7 @@ from pathlib import Path
 from .contract import (VERSION, SHA256, canonical, demand, digest, outcome,
                        read_json_document, typed_void, Violation)
 from .graph import build
+from .impact import analyze
 from rafvalchecks.modules import REGISTRY
 
 UTC = dt.timezone.utc
@@ -89,7 +90,7 @@ def execute(spec, manifest_path, *, workspace=".", prior=None, prior_hash=None,
         demand(previous.get("source_commit") == source_commit and previous.get("manifest_sha256") == manifest_hash,
                "PRIOR_SOURCE_MISMATCH")
     changes = set(changed_scopes or [])
-    demand(all(isinstance(x, str) and x for x in changes), "CHANGED_SCOPE_INVALID")
+    impact = analyze(graph, list(changes))
     previous_index = {x["id"]: x for x in previous["nodes"]} if previous else {}
     records = {}
     context = {"manifest_path": path, "workspace": Path(workspace), "source_commit": source_commit,
@@ -137,7 +138,7 @@ def execute(spec, manifest_path, *, workspace=".", prior=None, prior_hash=None,
                               and old.get("fingerprint") == fingerprint
                               and old.get("result") == "PASS_SCOPED"
                               and old.get("claim_allowed") is False and isinstance(old.get("details"), dict)
-                              and not changes.intersection(scope))
+                              and nid in impact["unaffected_candidates"] and not changes.intersection(scope))
             if cache_eligible:
                 result = outcome(nid, "REUSED_VALID_RECEIPT", evidence="REUSED_EXTERNAL_ASSERTION",
                                  details={"scope": "prior_claim_only", "prior_receipt_id": previous["receipt_id"],
@@ -166,7 +167,7 @@ def execute(spec, manifest_path, *, workspace=".", prior=None, prior_hash=None,
                "expires_at": expires.isoformat(timespec="seconds").replace("+00:00", "Z"),
                "predecessor_ref": prior_digest if previous else None,
                "rollback_ref": rollback_ref,
-               "changed_scopes_declared": sorted(changes), "external_trust_verified": False,
+               "changed_scopes_declared": sorted(changes), "impact_advisory": impact, "external_trust_verified": False,
                "nodes": [records[n] for n in graph["order"]], "typed_voids": gaps,
                "counts": {"nodes": len(records), "slots": graph["slot_count"], "extensions": graph["extension_count"],
                           "passed": sum(r["result"] == "PASS_SCOPED" for r in records.values()),

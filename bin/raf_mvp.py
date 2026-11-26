@@ -14,16 +14,19 @@ from rafvalchecks.core.contract import Violation, canonical, read_json_document,
 from rafvalchecks.core.graph import build
 from rafvalchecks.core.impact import analyze
 from rafvalchecks.core.git_coverage import audit_git
+from rafvalchecks.core.dependency_continuity import audit_dependency_continuity
 from rafvalchecks.core.engine import execute, write_once
 from rafvalchecks.core.temporal import analyze_file
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Fail-closed recursive validation MVP")
-    parser.add_argument("command", choices=["plan", "impact", "git-impact", "run", "temporal"])
+    parser.add_argument("command", choices=["plan", "impact", "git-impact", "dependency-guard", "run", "temporal"])
     parser.add_argument("--topology", help="JSON-only recursive topology")
     parser.add_argument("--base", help="Exact ancestor commit SHA for read-only Git comparison")
     parser.add_argument("--head", help="Exact checked-out HEAD SHA for read-only Git comparison")
+    parser.add_argument("--dep-graph", help="Committed resolved graph snapshot path, same path in base/head")
+    parser.add_argument("--perf-snapshot", help="Committed matching workload metrics path in base/head")
     parser.add_argument("--routes", help="Repository-local versioned exact/prefix path-to-scope rules")
     parser.add_argument("--manifest", default=".raf/validation.yml", help="V1 manifest, YAML subset or JSON")
     parser.add_argument("--workspace", default=".")
@@ -49,6 +52,10 @@ def main(argv=None):
             data = None
         if args.command == "git-impact":
             data = audit_git(graph, workspace=args.workspace, base=args.base, head=args.head, routes_file=args.routes)
+        elif args.command == "dependency-guard":
+            data = audit_dependency_continuity(graph, workspace=args.workspace,
+                base=args.base, head=args.head, routes_file=args.routes,
+                dependency_graph_path=args.dep_graph, perf_snapshot_path=args.perf_snapshot)
         elif args.command in ("plan", "impact"):
             data = {"version": "raf-valchecks-mvp/1", "result": "PLAN_ONLY", "claim_allowed": False,
                     "graph_sha256": graph["graph_hash"], "root_id": graph["root"]["id"],

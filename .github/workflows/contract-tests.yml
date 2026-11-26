@@ -64,6 +64,31 @@ jobs:
           print('changed_paths=' + str(len(data['changed_paths'])))
           print('anomaly_tokens=' + ','.join(data['anomaly_tokens']))
           PY
+      - name: Evidence-only dependency continuity alarm (never skip checks)
+        shell: sh
+        run: |
+          python3 - <<'PYDC'
+          import json, os, subprocess, sys
+          base=subprocess.check_output(['git','rev-parse','HEAD^'],text=True).strip()
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          r=subprocess.run([sys.executable,'bin/raf_mvp.py','dependency-guard',
+                           '--topology','examples/topology.mvp.json',
+                           '--routes','examples/change-routes.v1.json',
+                           '--workspace','.', '--base',base,'--head',head],
+                           capture_output=True,text=True,check=False)
+          assert r.returncode in (0,1), r.stderr
+          x=json.loads(r.stdout)
+          assert x['candidate_commit']==head and x['base_commit']==base
+          assert x['claim_allowed'] is False and x['runtime_skipping_authorized'] is False
+          assert x['promote_dependency_update_authorized'] is False
+          if x['changed_dependency_paths']:
+              assert x['status']=='TOKEN_VAZIO' and r.returncode==1
+              print('::warning title=DEPENDENCY_OR_BUILD_METADATA_CHANGE::' + x['visual_alert'])
+              print('dependency_paths='+','.join(x['changed_dependency_paths']))
+              print('gaps='+','.join(v['reason'] for v in x['typed_gaps']))
+          else:
+              print('dependency_change_detected=false')
+          PYDC
       - name: Compile and run negative contract cases
         shell: sh
         run: |
